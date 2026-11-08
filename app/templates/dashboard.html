@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% macro review_card(note, delayed=False) %}
+<li class="card">
+  <div class="card-main">
+    <a class="note-name" href="{{ obsidian_url(note) }}">{{ note.name }}</a>
+    <div class="meta">
+      <span class="tag tag-{{ (note.tag or 'Medium')|lower }}">{{ note.tag or 'Medium' }}</span>
+      <span>已讀 {{ note.cycle }} 次</span>
+      {% if delayed %}<span class="late">原定 {{ note.next_review|short_date }}</span>{% endif %}
+      {% if note.folder %}<span class="muted">{{ note.folder }}</span>{% endif %}
+    </div>
+  </div>
+  <form class="ratings" method="post" action="/notes/{{ note.id }}/review">
+    <button class="btn r-easy" name="rating" value="Easy">簡單</button>
+    <button class="btn r-medium" name="rating" value="Medium">普通</button>
+    <button class="btn r-hard" name="rating" value="Hard">困難</button>
+  </form>
+</li>
+{% endmacro %}
+
+{% macro note_table(notes, show_uploaded=False) %}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>名稱</th><th>tag</th><th>cycle</th><th>上次</th><th>下次</th>{% if show_uploaded %}<th>已上傳</th>{% endif %}<th></th></tr>
+  </thead>
+  <tbody>
+  {% for n in notes %}
+    <tr>
+      <td><a href="{{ obsidian_url(n) }}">{{ n.name }}</a></td>
+      <td>{{ n.tag or '—' }}</td>
+      <td>{{ n.cycle }}</td>
+      <td>{{ n.last_reviewed|short_date }}</td>
+      <td>{{ n.next_review|short_date if n.next_review else '結束' if n.cycle > 6 else '—' }}</td>
+      {% if show_uploaded %}<td>{{ '✓' if n.uploaded else '' }}</td>{% endif %}
+      <td><a class="small" href="/notes/{{ n.id }}/edit">編輯</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% block content %}
+<header class="top">
+  <div>
+    <h1>Neuron</h1>
+    <p class="muted">{{ today.year }}/{{ today.month }}/{{ today.day }}</p>
+  </div>
+  <div class="top-actions">
+    <a class="btn primary" href="/notes/new">＋ 新增筆記</a>
+    <form method="post" action="/logout"><button class="btn ghost" title="{{ user }}">登出</button></form>
+  </div>
+</header>
+
+{% if flash %}
+<div class="flash">
+  <span>{{ flash.message }}</span>
+  {% if flash.undo_id %}
+    <form method="post" action="/reviews/{{ flash.undo_id }}/undo"><button class="btn ghost small">復原</button></form>
+  {% endif %}
+</div>
+{% endif %}
+
+<section>
+  <h2>Today <span class="count">{{ today_notes|length }}</span></h2>
+  {% if today_notes %}
+    <ul class="cards">{% for n in today_notes %}{{ review_card(n) }}{% endfor %}</ul>
+  {% else %}
+    <p class="empty">今天沒有要讀的筆記</p>
+  {% endif %}
+</section>
+
+{% if delayed %}
+<section>
+  <h2>Delayed <span class="count late-bg">{{ delayed|length }}</span></h2>
+  <ul class="cards">{% for n in delayed %}{{ review_card(n, delayed=True) }}{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% include "_heatmap.html" %}
+
+<section>
+  <h2>Gemini Notebook <span class="count">{{ gemini|length }}</span></h2>
+  {% if gemini %}
+    <p class="muted small">已讀 5 次以上、尚未上傳。手動上傳到 Gemini Notebook 後按「已上傳」。</p>
+    <ul class="cards">
+    {% for n in gemini %}
+      <li class="card">
+        <div class="card-main">
+          <a class="note-name" href="{{ obsidian_url(n) }}">{{ n.name }}</a>
+          <div class="meta"><span>已讀 {{ n.cycle }} 次</span></div>
+        </div>
+        <form method="post" action="/notes/{{ n.id }}/uploaded"><button class="btn">已上傳</button></form>
+      </li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">沒有待上傳的筆記</p>
+  {% endif %}
+</section>
+
+<details>
+  <summary><h2>History <span class="count">{{ history|length }}</span></h2></summary>
+  {% if history %}{{ note_table(history, show_uploaded=True) }}{% else %}<p class="empty">還沒有讀過的筆記</p>{% endif %}
+</details>
+
+<details>
+  <summary><h2>全部筆記 <span class="count">{{ all_notes|length }}</span></h2></summary>
+  {% if all_notes %}{{ note_table(all_notes, show_uploaded=True) }}{% else %}<p class="empty">還沒有筆記，按右上角新增</p>{% endif %}
+</details>
+{% endblock %}

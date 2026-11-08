@@ -1,0 +1,52 @@
+{# 閱讀熱度圖。需要 context 變數 heatmap（app/activity.py 的 Heatmap） #}
+{% set wd = ['一', '二', '三', '四', '五', '六', '日'] %}
+{% set hm = heatmap %}
+<section class="activity">
+  <h2>閱讀紀錄</h2>
+  <div class="hm-stats">
+    <div><strong>{{ hm.today_count }}</strong><span>今天</span></div>
+    <div><strong>{{ hm.current_streak }}</strong><span>連續天數</span></div>
+    <div><strong>{{ hm.longest_streak }}</strong><span>最長連續</span></div>
+    <div><strong>{{ hm.total }}</strong><span>過去一年（{{ hm.active_days }} 天）</span></div>
+  </div>
+
+  <div class="hm-scroll" id="hm-scroll">
+    <div class="hm">
+      <div class="hm-months">
+        {% for col, label in hm.month_labels %}
+          <span style="grid-column: {{ col + 1 }} / span 4">{{ label }}</span>
+        {% endfor %}
+      </div>
+      <div class="hm-days" aria-hidden="true">
+        <span></span><span>一</span><span></span><span>三</span><span></span><span>五</span><span></span>
+      </div>
+      <div class="hm-grid" role="img" aria-label="過去一年每天的閱讀篇數，共 {{ hm.total }} 篇">
+        {% for week in hm.weeks %}{% for c in week %}
+          {% if c.future %}<i class="c future"></i>
+          {% else %}<i class="c l{{ c.level }}" data-tip="{{ c.day.month }}/{{ c.day.day }}（{{ wd[c.day.weekday()] }}）{{ c.count ~ ' 篇' if c.count else '沒有閱讀' }}" title="{{ c.day.month }}/{{ c.day.day }}（{{ wd[c.day.weekday()] }}）{{ c.count ~ ' 篇' if c.count else '沒有閱讀' }}"></i>
+          {% endif %}
+        {% endfor %}{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="hm-foot">
+    <span class="hm-tip" id="hm-tip">點格子看當天篇數</span>
+    <span class="hm-legend">少 {% for l in hm.legend %}<i class="c l{{ l }}"></i>{% endfor %} 多</span>
+  </div>
+</section>
+<script>
+  // 預設捲到最右邊（最近幾週）；點格子在下方顯示當天篇數（iPad 沒有滑鼠提示）
+  (function () {
+    var s = document.getElementById("hm-scroll");
+    s.scrollLeft = s.scrollWidth;
+    var tip = document.getElementById("hm-tip");
+    s.addEventListener("click", function (e) {
+      var t = e.target.closest("[data-tip]");
+      if (!t) return;
+      s.querySelectorAll(".c.sel").forEach(function (x) { x.classList.remove("sel"); });
+      t.classList.add("sel");
+      tip.textContent = t.dataset.tip;
+    });
+  })();
+</script>

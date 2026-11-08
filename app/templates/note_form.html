@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ '編輯' if note else '新增' }}筆記 · Neuron{% endblock %}
+{% block content %}
+<header class="top">
+  <h1>{{ '編輯筆記' if note else '新增筆記' }}</h1>
+  <a class="btn ghost" href="/">返回</a>
+</header>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+{% set v = values %}
+<form class="note-form" method="post" action="{{ '/notes/%d/edit'|format(note.id) if note else '/notes/new' }}">
+  <label>名稱（與 Obsidian 檔名一致）
+    <input name="name" required autocomplete="off" value="{{ note.name if note else v.get('name', '') }}">
+  </label>
+
+  <label>資料夾（選填）
+    <input name="folder" list="folders" autocomplete="off" placeholder="例如 English/單字"
+           value="{{ note.folder if note else v.get('folder', '') }}">
+    <datalist id="folders">{% for f in folders %}<option value="{{ f }}">{% endfor %}</datalist>
+  </label>
+
+  {% set cur_tag = (note.tag if note else v.get('tag')) or '' %}
+  <label>tag（選填，空白視為 Medium）
+    <select name="tag">
+      <option value="" {{ 'selected' if not cur_tag }}>未標註</option>
+      {% for t in ['Easy', 'Medium', 'Hard'] %}
+        <option value="{{ t }}" {{ 'selected' if cur_tag == t }}>{{ t }}（{{ rating_labels[t] }}）</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  {% if note %}
+    <label>cycle（已完成閱讀次數）
+      <input name="cycle" type="number" min="0" value="{{ note.cycle }}">
+    </label>
+    <label>last_reviewed
+      <input name="last_reviewed" type="date" value="{{ note.last_reviewed or '' }}">
+    </label>
+    <label>next_review（空白 = 排程結束）
+      <input name="next_review" type="date" value="{{ note.next_review or '' }}">
+    </label>
+    <label class="check">
+      <input name="uploaded" type="checkbox" value="1" {{ 'checked' if note.uploaded }}>
+      已上傳 Gemini Notebook
+    </label>
+  {% else %}
+    <label>首次閱讀日
+      <input name="next_review" type="date" required value="{{ v.get('next_review') or today }}">
+    </label>
+  {% endif %}
+
+  <button class="btn primary big" type="submit">{{ '儲存' if note else '新增' }}</button>
+</form>
+
+{% if note %}
+<form class="danger-zone" method="post" action="/notes/{{ note.id }}/delete"
+      data-msg="確定刪除「{{ note.name }}」？複習紀錄也會一起刪除。"
+      onsubmit="return confirm(this.dataset.msg)">
+  <button class="btn danger" type="submit">刪除這篇筆記</button>
+</form>
+{% endif %}
+{% endblock %}

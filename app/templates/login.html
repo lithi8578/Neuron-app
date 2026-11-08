@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}登入 · Neuron{% endblock %}
+{% block content %}
+<section class="login">
+  <h1>Neuron</h1>
+  <p class="muted">英文單字筆記間隔複習</p>
+
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+  {% if google_configured %}
+    <a class="btn primary big" href="/auth/google">用 Google 帳號登入</a>
+  {% else %}
+    <p class="muted small">尚未設定 GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET，Google 登入未啟用。</p>
+  {% endif %}
+
+  {% if dev_login %}
+    <form method="post" action="/auth/dev">
+      <button class="btn big" type="submit">開發模式登入（僅本機）</button>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}
